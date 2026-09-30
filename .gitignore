@@ -32,3 +32,6 @@ temp/
 
 # ROS2 bags
 bags/
+
+# mujoco
+cm_control/mujoco
