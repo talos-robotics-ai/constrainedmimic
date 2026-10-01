@@ -39,8 +39,9 @@ source "$UNITREE_WS/install/setup.bash"
 echo "--- Building Main Workspace ---"
 cd "$WS_ROOT"
 
-# We ignore the packages already built in the underlay to prevent conflicts
-colcon build --symlink-install \
+# We ignore the packages already built in the underlay to prevent conflicts.
+# colcon runs from the venv so ament_python entry points use the venv interpreter.
+$PYTHON_EXECUTABLE -m colcon build --symlink-install \
     --cmake-args -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
     --packages-ignore \
         cyclonedds \
