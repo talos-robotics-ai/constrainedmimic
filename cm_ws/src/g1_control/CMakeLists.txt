@@ -99,12 +99,26 @@ install(PROGRAMS
   scripts/standing_node.py
   scripts/teleop_node.py
   scripts/karate_chop_node.py
+  scripts/karate_chop_perception_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+# RViz configs, and the G1 URDF + meshes for robot_state_publisher (same model as
+# frax uses for the kinematics; the launch files point its mesh paths here)
+install(DIRECTORY rviz
+  DESTINATION share/${PROJECT_NAME}
+)
+set(G1_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../../../cm_control/cm_control/assets/unitree_g1)
+install(FILES ${G1_ASSETS}/old/g1_29dof_rev_1_0.urdf
+  DESTINATION share/${PROJECT_NAME}/unitree_g1
+)
+install(DIRECTORY ${G1_ASSETS}/meshes
+  DESTINATION share/${PROJECT_NAME}/unitree_g1
 )
 
 ament_package()

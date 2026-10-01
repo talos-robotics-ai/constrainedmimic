@@ -1,0 +1,108 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Plane: XY
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/RobotModel
+      Name: Robot
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+        Depth: 1
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Snapshot cloud
+      Enabled: true
+      Topic:
+        Value: /g1_perception/snapshot/cloud
+        Depth: 1
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: false
+      Min Color: 0; 0; 0
+      Max Color: 255; 255; 255
+      Autocompute Intensity Bounds: true
+      Style: Points
+      Size (Pixels): 2
+      Decay Time: 0
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Live cloud
+      Enabled: false
+      Topic:
+        Value: /camera/depth/points
+        Depth: 2
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: false
+      Min Color: 0; 0; 0
+      Max Color: 255; 255; 255
+      Autocompute Intensity Bounds: true
+      Style: Points
+      Size (Pixels): 2
+      Decay Time: 0
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Obstacles
+      Enabled: true
+      Namespaces:
+        boxes: true
+        labels: true
+      Topic:
+        Value: /g1_perception/obstacles
+        Depth: 1
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+    - Class: rviz_default_plugins/Image
+      Name: SAM 3 overlay
+      Enabled: true
+      Topic:
+        Value: /g1_perception/overlay
+        Depth: 1
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+  Global Options:
+    Fixed Frame: karate_chop_reference
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Focal Point:
+        X: 0.4
+        Y: 0
+        Z: 0.6
+      Distance: 3
+      Pitch: 0.4
+      Yaw: 3.6
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1400
+  Height: 900
