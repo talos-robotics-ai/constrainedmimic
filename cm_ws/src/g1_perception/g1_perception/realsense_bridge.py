@@ -2,13 +2,15 @@
 
 realsense_server.py on PC2 answers each ZMQ request with four parts:
 colour JPEG, side-by-side IR-left|IR-right JPEG, raw z16 depth and the IR-left
-intrinsics as JSON. This node polls it and republishes the frames as standard
-sensor_msgs topics.
+intrinsics as JSON. realsense_server_calib.py adds a fifth part, the colour
+intrinsics and the depth->colour extrinsics as JSON. This node polls the server
+and republishes the frames as standard sensor_msgs topics.
 
 Depth is registered to IR-left on a D4xx, so depth, infra1 and the point cloud
-share one optical frame and one CameraInfo. The server sends no colour
-intrinsics, stereo baseline or capture time, so colour and infra2 have no
-CameraInfo and every message is stamped when the reply arrives.
+share one optical frame and one CameraInfo. With the fifth part, colour gets a
+CameraInfo and the depth->colour extrinsics are broadcast as a static transform.
+The server sends no stereo baseline or capture time, so infra2 has no CameraInfo
+and every message is stamped when the reply arrives.
 """
 
 import io
@@ -19,10 +21,13 @@ import time
 import numpy as np
 import rclpy
 import zmq
+from geometry_msgs.msg import TransformStamped
 from PIL import Image as PILImage
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, CompressedImage, Image, PointCloud2, PointField
+from tf2_ros import StaticTransformBroadcaster
 
 DEPTH_FRAME = "camera_depth_optical_frame"
 COLOR_FRAME = "camera_color_optical_frame"
@@ -49,6 +54,7 @@ class RealSenseBridge(Node):
 
         self.pub_color = pub(Image, "/camera/color/image_raw")
         self.pub_color_jpeg = pub(CompressedImage, "/camera/color/image_raw/compressed")
+        self.pub_color_info = pub(CameraInfo, "/camera/color/camera_info")
         self.pub_depth = pub(Image, "/camera/depth/image_rect_raw")
         self.pub_depth_info = pub(CameraInfo, "/camera/depth/camera_info")
         self.pub_infra1 = pub(Image, "/camera/infra1/image_rect_raw")
@@ -57,6 +63,8 @@ class RealSenseBridge(Node):
         self.pub_cloud = pub(PointCloud2, "/camera/depth/points")
 
         self.rays = None  # per-pixel (x/z, y/z), built from the first frame's intrinsics
+        self.tf_broadcaster = StaticTransformBroadcaster(self)
+        self.color_calib = None  # last colour calibration JSON, re-broadcast when it changes
         self.frames_since_report = 0
         self.last_report = time.monotonic()
 
@@ -95,7 +103,7 @@ class RealSenseBridge(Node):
                 time.sleep(0.2)
                 continue
             try:
-                self.publish_frame(*parts[:4])
+                self.publish_frame(*parts[:5])
             except Exception:
                 # rclpy's SIGINT handler invalidates the context before shutdown() runs.
                 if not rclpy.ok():
@@ -104,7 +112,7 @@ class RealSenseBridge(Node):
             self.report_rate()
             time.sleep(max(0.0, self.period - (time.monotonic() - start)))
 
-    def publish_frame(self, color_jpeg, infra_jpeg, depth_raw, intrinsics_json):
+    def publish_frame(self, color_jpeg, infra_jpeg, depth_raw, intrinsics_json, color_calib_json=None):
         stamp = self.get_clock().now().to_msg()
         intrinsics = json.loads(intrinsics_json)
         width, height = intrinsics["width"], intrinsics["height"]
@@ -112,6 +120,12 @@ class RealSenseBridge(Node):
         color = np.asarray(PILImage.open(io.BytesIO(color_jpeg)).convert("RGB"))
         self.pub_color.publish(image_msg(color, "rgb8", stamp, COLOR_FRAME))
         self.pub_color_jpeg.publish(compressed_msg(color_jpeg, stamp, COLOR_FRAME))
+        if color_calib_json is not None:
+            color_calib = json.loads(color_calib_json)
+            self.pub_color_info.publish(camera_info_msg(color_calib, stamp, COLOR_FRAME))
+            if color_calib != self.color_calib:
+                self.tf_broadcaster.sendTransform(depth_to_color_tf(color_calib, stamp))
+                self.color_calib = color_calib
 
         depth = np.frombuffer(depth_raw, np.uint16).reshape(height, width)
         info = camera_info_msg(intrinsics, stamp, DEPTH_FRAME)
@@ -193,6 +207,25 @@ def camera_info_msg(intrinsics, stamp, frame_id):
         p=[fx, 0.0, cx, 0.0, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0],
     )
     msg.header.stamp, msg.header.frame_id = stamp, frame_id
+    return msg
+
+
+def depth_to_color_tf(color_calib, stamp):
+    """Pose of the colour optical frame in the depth optical frame.
+
+    The server sends R, t with p_color = R @ p_depth + t; the colour frame's pose in
+    the depth frame is the inverse: rotation R^T, origin -R^T t.
+    """
+    rotation = np.array(color_calib["depth_to_color_rotation"]).reshape(3, 3)
+    origin = -rotation.T @ np.array(color_calib["depth_to_color_translation"])
+    x, y, z, w = Rotation.from_matrix(rotation.T).as_quat()
+    msg = TransformStamped()
+    msg.header.stamp, msg.header.frame_id = stamp, DEPTH_FRAME
+    msg.child_frame_id = COLOR_FRAME
+    t = msg.transform.translation
+    t.x, t.y, t.z = origin.tolist()
+    r = msg.transform.rotation
+    r.x, r.y, r.z, r.w = float(x), float(y), float(z), float(w)
     return msg
 
 

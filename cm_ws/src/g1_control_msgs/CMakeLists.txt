@@ -23,6 +23,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ControllerButtons.msg"
   "msg/TeleopState.msg"
   "msg/MimicObservation.msg"
+  "msg/Box.msg"
+  "msg/BoxArray.msg"
   "srv/CaptureScene.srv"
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
