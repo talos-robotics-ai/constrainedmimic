@@ -109,6 +109,27 @@ or if working with hardware,
 source scripts/setup_hardware.sh
 ```
 
+### SAM 3 (perception)
+
+`g1_perception` segments the RealSense image with [SAM 3](https://github.com/facebookresearch/sam3). It needs an NVIDIA GPU with ~4 GB free and the NVIDIA driver (CUDA 13 capable); the CUDA toolkit is not needed, PyTorch ships its own runtime.
+
+Clone SAM 3 next to `constrainedmimic` (not inside it) and install it into the venv. SAM 3 declares `numpy<2`, which would downgrade the numpy JAX needs, so pin numpy with an override; it runs fine on numpy 2. From the top-level `constrainedmimic` directory:
+```
+git clone https://github.com/facebookresearch/sam3 ../sam3
+python -c "import numpy; print('numpy==' + numpy.__version__)" > /tmp/numpy_override.txt
+uv pip install --override /tmp/numpy_override.txt -e ../sam3 torch torchvision einops pycocotools pyzmq "setuptools<80"
+```
+`setuptools<80` matters: torch pulls in a newer setuptools that breaks `colcon build --symlink-install` for Python packages ("option --uninstall not recognized"). Rebuild afterwards with `./scripts/build_all.sh`, which runs colcon from the venv so the nodes use the venv's Python.
+
+The weights are gated: request access on [huggingface.co/facebook/sam3](https://huggingface.co/facebook/sam3), then log in once with `hf auth login`. The first start downloads ~3.5 GB.
+
+Usage (with `realsense_server.py` running on PC2):
+```
+ros2 launch g1_perception realsense_bridge.launch.py
+ros2 service call /g1_perception/capture_scene g1_control_msgs/srv/CaptureScene "{prompts: ['table', 'box']}"
+```
+The service returns the labels and scores; the frame and masks are published on `/g1_perception/snapshot/*` and the overlay is shown in RViz. Launch with `sam3:=false` for the camera stream only.
+
 
 ## Citation
 
