@@ -1,0 +1,14 @@
+# Snapshot the latest RealSense frames and segment the colour image with SAM 3.
+#
+# The frames and masks are not returned here but published (latched) on
+# /g1_perception/snapshot/{color,depth,depth_info,cloud,label_image}, all stamped
+# with `stamp`. label_image is 16UC1 in colour pixels: 0 = no detection,
+# i + 1 = detection i (higher score wins where masks overlap).
+
+string[] prompts                     # text prompts, empty = the node's default prompts
+---
+bool success
+string message
+builtin_interfaces/Time stamp        # camera frame the detections belong to
+string[] labels                      # prompt of each detection, sorted by score (descending)
+float32[] scores

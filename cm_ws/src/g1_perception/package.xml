@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>g1_perception</name>
+  <version>0.0.1</version>
+  <description>Perception for the Unitree G1: RealSense ZMQ bridge and SAM 3 scene capture</description>
+  <maintainer email="gabriel.voss01@gmail.com">g1ack52</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>g1_control_msgs</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <!-- pyzmq, numpy, Pillow, torch and sam3 come from the constrainedmimic venv -->
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

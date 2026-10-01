@@ -1,0 +1,71 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Plane: XZ
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/Axes
+      Name: Camera axes
+      Enabled: true
+      Length: 0.3
+      Radius: 0.02
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/PointCloud2
+      Name: RealSense cloud
+      Enabled: true
+      Topic:
+        Value: /camera/depth/points
+        Depth: 2
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: false
+      Min Color: 0; 0; 0
+      Max Color: 255; 255; 255
+      Autocompute Intensity Bounds: true
+      Style: Points
+      Size (Pixels): 2
+      Decay Time: 0
+    - Class: rviz_default_plugins/Image
+      Name: Color
+      Enabled: true
+      Topic:
+        Value: /camera/color/image_raw
+        Depth: 2
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+    - Class: rviz_default_plugins/Image
+      Name: SAM 3 overlay
+      Enabled: true
+      Topic:
+        Value: /g1_perception/overlay
+        Depth: 1
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+  Global Options:
+    Fixed Frame: camera_depth_optical_frame
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 1.5
+      Distance: 4
+      Pitch: -1.2
+      Yaw: -1.5708
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1400
+  Height: 900
