@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
@@ -50,18 +50,25 @@ def generate_launch_description():
                 }.items(),
                 condition=IfCondition(LaunchConfiguration("record")),
             ),
-            IncludeLaunchDescription(
-                PathJoinSubstitution(
-                    [FindPackageShare("g1_perception"), "launch", "realsense_bridge.launch.py"]
-                ),
-                launch_arguments={
-                    "zmq_addr": LaunchConfiguration("zmq_addr"),
-                    "rviz": "false",  # the RViz below shows the robot too
-                    "sam3": LaunchConfiguration("sam3"),
-                }.items(),
+            # Scoped: the arguments passed to the include (rviz:=false) must not
+            # overwrite this file's own launch arguments
+            GroupAction(
+                scoped=True,
                 condition=IfCondition(
                     PythonExpression(["'", LaunchConfiguration("obstacles_source"), "' == 'camera'"])
                 ),
+                actions=[
+                    IncludeLaunchDescription(
+                        PathJoinSubstitution(
+                            [FindPackageShare("g1_perception"), "launch", "realsense_bridge.launch.py"]
+                        ),
+                        launch_arguments={
+                            "zmq_addr": LaunchConfiguration("zmq_addr"),
+                            "rviz": "false",  # the RViz below shows the robot too
+                            "sam3": LaunchConfiguration("sam3"),
+                        }.items(),
+                    ),
+                ],
             ),
             # Robot + scene in the karate_chop_reference frame (the karate node publishes
             # /joint_states and karate_chop_reference -> pelvis)
