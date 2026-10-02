@@ -230,6 +230,10 @@ class KarateChopNode(Node):
         if self.obstacles_source == "bag":
             # Read now so the capture advance does not stall the control loop
             obstacles_bag = self.get_parameter("obstacles_bag").value
+            if not obstacles_bag:
+                raise ValueError(
+                    "obstacles_source=bag needs obstacles_bag:=<path to a recorded capture>"
+                )
             self.bag_capture = read_bag_capture(obstacles_bag)
             self.get_logger().info(
                 f"Obstacles from {obstacles_bag}: "
@@ -1246,6 +1250,8 @@ def read_bag_capture(path):
             transforms.update({t.child_frame_id: t for t in msg.transforms})
         else:
             last[topic] = msg
+    if BAG_OBSTACLES_TOPIC not in last:
+        raise RuntimeError(f"{path} has no scene capture (no message on {BAG_OBSTACLES_TOPIC})")
     return {
         "obstacles": last.pop(BAG_OBSTACLES_TOPIC),
         "scene": last,

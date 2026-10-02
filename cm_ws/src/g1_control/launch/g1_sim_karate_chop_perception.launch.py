@@ -1,15 +1,43 @@
+import glob
 import os
+
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, LogInfo
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+OBSTACLES_TOPIC = "/g1_control/karate_chop/obstacles/reference"
+
+
+def capture_count(bag):
+    """Number of scene captures recorded in a bag (0 if it has none or is unreadable)"""
+    try:
+        with open(os.path.join(bag, "metadata.yaml")) as f:
+            info = yaml.safe_load(f)["rosbag2_bagfile_information"]
+    except (OSError, KeyError, TypeError, yaml.YAMLError):
+        return 0
+    for topic in info.get("topics_with_message_count", []):
+        if topic["topic_metadata"]["name"] == OBSTACLES_TOPIC:
+            return topic["message_count"]
+    return 0
+
+
+def latest_capture_bag(bag_dir="bags"):
+    """Newest recorded bag (relative to the launch directory) holding a scene capture"""
+    for bag in sorted(glob.glob(os.path.join(bag_dir, "karate_chop_perception_*")), reverse=True):
+        if capture_count(bag) > 0:
+            return bag
+    return ""
+
+
 def generate_launch_description():
+    default_bag = latest_capture_bag()
     # Robot model for RViz: the G1 URDF installed with g1_control, its relative
     # mesh paths made absolute so that RViz can load them
     share = get_package_share_directory("g1_control")
@@ -26,11 +54,19 @@ def generate_launch_description():
             # estimator. Other options include "mimic" for using the root state
             # from the reference motion, or "topic" if in sim or using mocap
             DeclareLaunchArgument("root_state_source", default_value="estimator"),
-            # Where the obstacle boxes come from: "camera" (live capture), "topic"
-            # (replayed on /g1_control/karate_chop/obstacles/reference) or "bag"
-            # (the capture recorded in the bag at obstacles_bag, used at the capture advance)
-            DeclareLaunchArgument("obstacles_source", default_value="camera"),
-            DeclareLaunchArgument("obstacles_bag", default_value=""),
+            # Where the obstacle boxes come from: "bag" (default in sim: the capture
+            # recorded in obstacles_bag, used at the capture advance), "camera" (live
+            # capture, needs the robot network) or "topic" (replayed on
+            # /g1_control/karate_chop/obstacles/reference)
+            DeclareLaunchArgument("obstacles_source", default_value="bag"),
+            # Default: the newest bag with a capture in ./bags
+            DeclareLaunchArgument("obstacles_bag", default_value=default_bag),
+            LogInfo(
+                msg=["Obstacles from the bag: ", LaunchConfiguration("obstacles_bag")],
+                condition=IfCondition(
+                    PythonExpression(["'", LaunchConfiguration("obstacles_source"), "' == 'bag'"])
+                ),
+            ),
             # Perception (camera mode only): RealSense bridge + scene_capture
             # (loads SAM 3, ~4 GB GPU). RViz shows the robot with the scene
             DeclareLaunchArgument("zmq_addr", default_value="tcp://192.168.123.164:5556"),
