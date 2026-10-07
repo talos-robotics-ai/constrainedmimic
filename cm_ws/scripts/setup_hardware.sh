@@ -50,7 +50,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/mujoco/lib
 # 4. CycloneDDS Configuration (Hardware)
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export CYCLONEDDS_URI='<CycloneDDS><Domain><General><Interfaces>
-                            <NetworkInterface name="enp2s0" priority="default" multicast="default" />
+                            <NetworkInterface name="enp11s0" priority="default" multicast="default" />
                         </Interfaces></General></Domain></CycloneDDS>'
 
-echo "✓ Unitree ROS2 environment configured for HARDWARE (Robot: enp2s0)"
+echo "✓ Unitree ROS2 environment configured for HARDWARE (Robot: enp11s0)"
